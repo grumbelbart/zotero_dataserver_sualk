@@ -1,0 +1,15 @@
+#!/usr/bin/php
+<?
+set_include_path("../include");
+require("header.inc.php");
+
+if (empty($argv[1]) || empty($argv[2])) {
+	die("Usage: $argv[0] " . '$userID $username' . "\n");
+}
+
+$userID = $argv[1];
+$username = $argv[2];
+
+echo "Adding new user $username with ID $userID\n";
+Zotero_Users::add($userID, $username);
+?>
