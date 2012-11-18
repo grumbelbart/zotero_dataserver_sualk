@@ -108,13 +108,6 @@ class Zotero_DB {
 			)
 		);
 		
-		// For admin, use user/pass from master
-		if (get_called_class() == 'Zotero_Admin_DB') {
-			$auth = Zotero_DBConnectAuth($this->db);
-			$config['username'] = $auth['user'];
-			$config['password'] = $auth['pass'];
-		}
-		
 		$this->links[$shardID] = new Zend_Db_Adapter_Mysqli($config);
 		
 		$conn = $this->links[$shardID]->getConnection();
@@ -1002,42 +995,6 @@ class Zotero_ID_DB_1 extends Zotero_DB {
 
 class Zotero_ID_DB_2 extends Zotero_DB {
 	protected $db = 'id2';
-	
-	protected function __construct() {
-		parent::__construct();
-	}
-}
-
-
-class Zotero_WWW_DB_1 extends Zotero_DB {
-	protected $db = 'www1';
-	
-	protected function __construct() {
-		parent::__construct();
-	}
-}
-
-
-class Zotero_WWW_DB_2 extends Zotero_DB {
-	protected $db = 'www2';
-	
-	protected function __construct() {
-		parent::__construct();
-	}
-}
-
-
-class Zotero_Cache_DB extends Zotero_DB {
-	protected $db = 'cache';
-	
-	protected function __construct() {
-		parent::__construct();
-	}
-}
-
-
-class Zotero_Admin_DB extends Zotero_DB {
-	protected $db = 'admin';
 	
 	protected function __construct() {
 		parent::__construct();
