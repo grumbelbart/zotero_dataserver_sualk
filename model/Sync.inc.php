@@ -858,86 +858,6 @@ class Zotero_Sync {
 	}
 	
 	
-	public static function getCachedDownload($userID, $lastsync, $apiVersion) {
-		if (!$lastsync) {
-			throw new Exception('$lastsync not provided');
-		}
-		
-		require_once 'AWS-SDK/sdk.class.php';
-		$s3 = new AmazonS3();
-		
-		$s3Key = $apiVersion . "/" . md5(
-			Zotero_Users::getUpdateKey($userID)
-			. "_" . $lastsync
-			// Remove after 2.1 sync cutoff
-			. ($apiVersion >= 9 ? "_" . $apiVersion : "")
-			. "_" . self::$cacheVersion
-		);
-		
-		// Check S3 for file
-		try {
-			$response = $s3->get_object(
-				Z_CONFIG::$S3_BUCKET_CACHE,
-				$s3Key,
-				array(
-					'curlopts' => array(
-						CURLOPT_FORBID_REUSE => true
-					)
-				)
-			);
-			if ($response->isOK()) {
-				$xmldata = $response->body;
-			}
-			else if ($response->status == 404) {
-				$xmldata = false;
-			}
-			else {
-				throw new Exception($response->status . " " . $response->body);
-			}
-		}
-		catch (Exception $e) {
-			Z_Core::logError("Warning: '" . $e->getMessage() . "' getting cached download from S3");
-			$xmldata = false;
-		}
-		
-		// Update the last-used timestamp in S3
-		if ($xmldata) {
-			$response = $s3->update_object(Z_CONFIG::$S3_BUCKET_CACHE, $s3Key, array(
-				'meta' => array(
-					'last-used' => time()
-				)
-			));
-		}
-		
-		return $xmldata;
-	}
-	
-	
-	public static function cacheDownload($userID, $updateKey, $lastsync, $apiVersion, $xmldata) {
-		require_once 'AWS-SDK/sdk.class.php';
-		$s3 = new AmazonS3();
-		
-		$s3Key = $apiVersion . "/" . md5(
-			$updateKey . "_" . $lastsync
-			// Remove after 2.1 sync cutoff
-			. ($apiVersion >= 9 ? "_" . $apiVersion : "")
-			. "_" . self::$cacheVersion
-		);
-		
-		// Add to S3
-		$response = $s3->create_object(
-			Z_CONFIG::$S3_BUCKET_CACHE,
-			$s3Key,
-			array(
-				'body' => $xmldata
-			)
-		);
-		if (!$response->isOK()) {
-			throw new Exception($response->status . " " . $response->body);
-		}
-	}
-	
-	
 	/**
 	 * Get the result of a queued download process for a given sync session
 	 *
@@ -1066,26 +986,6 @@ class Zotero_Sync {
 		
 		if ($lastsync == 1) {
 			StatsD::increment("sync.process.download.full");
-		}
-		
-		try {
-			$cached = Zotero_Sync::getCachedDownload($userID, $lastsync, $apiVersion);
-			if ($cached) {
-				$doc->loadXML($cached);
-				StatsD::increment("sync.process.download.cache.hit");
-				return;
-			}
-		}
-		catch (Exception $e) {
-			$msg = $e->getMessage();
-			if (strpos($msg, "Too many connections") !== false) {
-				$msg = "'Too many connections' from MySQL";
-			}
-			else {
-				$msg = "'$msg'";
-			}
-			Z_Core::logError("Warning: $msg getting cached download");
-			StatsD::increment("sync.process.download.cache.error");
 		}
 		
 		set_time_limit(1800);
@@ -1313,16 +1213,6 @@ class Zotero_Sync {
 				self::removeDownloadProcess($syncDownloadProcessID);
 			}
 			throw new Exception(self::$validationError . "\n\nXML:\n\n" .  $doc->saveXML());
-		}
-		
-		// Cache response if response isn't empty
-		try {
-			if ($doc->documentElement->firstChild->hasChildNodes()) {
-				self::cacheDownload($userID, $updateKey, $lastsync, $apiVersion, $doc->saveXML());
-			}
-		}
-		catch (Exception $e) {
-			Z_Core::logError("WARNING: " . $e);
 		}
 		
 		if ($syncDownloadQueueID) {

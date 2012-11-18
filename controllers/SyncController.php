@@ -292,48 +292,6 @@ class SyncController extends Controller {
 				$queue = false;
 			}
 			
-			// If we have a cached response, return that
-			try {
-				$startedTimestamp = microtime(true);
-				$cached = Zotero_Sync::getCachedDownload($this->userID, $lastsync, $this->apiVersion);
-				if ($cached) {
-					$this->responseXML = simplexml_load_string($cached);
-					
-					$duration = round((float) microtime(true) - $startedTimestamp, 2);
-					Zotero_Sync::logDownload(
-						$this->userID,
-						round($lastsync),
-						strlen($cached),
-						$this->ipAddress ? $this->ipAddress : 0,
-						0,
-						$duration,
-						$duration,
-						(int) !$this->responseXML
-					);
-					
-					StatsD::increment("sync.process.download.cache.hit");
-					
-					if (!$this->responseXML) {
-						$msg = "Error parsing cached XML for user " . $this->userID;
-						error_log($msg);
-						$this->handleUpdatedError(new Exception($msg));
-					}
-					
-					$this->end();
-				}
-			}
-			catch (Exception $e) {
-				$msg = $e->getMessage();
-				if (strpos($msg, "Too many connections") !== false) {
-					$msg = "'Too many connections' from MySQL";
-				}
-				else {
-					$msg = "'$msg'";
-				}
-				Z_Core::logError("Warning: $msg getting cached download");
-				StatsD::increment("sync.process.download.cache.error");
-			}
-			
 			try {
 				$num = Zotero_Items::countUpdated($this->userID, $lastsync, 5);
 			}
