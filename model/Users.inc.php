@@ -70,41 +70,6 @@ class Zotero_Users {
 	}
 	
 	
-	public static function getUserIDFromSession($cookie, $sessionID) {
-		if (empty(Z_CONFIG::$SESSION_AUTH_KEY)) {
-			return false;
-		}
-		
-		$sessionKey = Z_CONFIG::$SESSION_AUTH_KEY;
-		
-		if (empty($cookie[$sessionKey])) {
-			return false;
-		}
-		
-		$id = $cookie[$sessionKey];
-		
-		// For CSRF protection, require the session id to be submitted in the URL
-		// as well, since other domains don't have access to the session cookie.
-		if ($id != $sessionID) {
-			return false;
-		}
-		
-		$sql = "SELECT userID FROM sessions WHERE id=?
-				AND UNIX_TIMESTAMP() < modified + lifetime";
-		try {
-			$userID = Zotero_WWW_DB_2::valueQuery($sql, $id);
-			Zotero_WWW_DB_2::close();
-		}
-		catch (Exception $e) {
-			Z_Core::logError("WARNING: $e -- retrying on primary");
-			$userID = Zotero_WWW_DB_1::valueQuery($sql, $id);
-			Zotero_WWW_DB_1::close();
-		}
-		
-		return $userID;
-	}
-	
-	
 	public static function getUsername($userID, $skipAutoAdd=false) {
 		if (!empty(self::$usernamesByID[$userID])) {
 			return self::$usernamesByID[$userID];
