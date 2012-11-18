@@ -711,41 +711,6 @@ class Zotero_S3 {
 		}
 	}
 	
-	public static function getInstitutionalUserQuota($userID) {
-		// TODO: config
-		$dev = Z_ENV_TESTING_SITE ? "_test" : "";
-		$databaseName = "zotero_www{$dev}";
-		
-		// Get maximum institutional quota by e-mail domain
-		$sql = "SELECT IFNULL(MAX(storageQuota), 0) FROM $databaseName.users_email
-				JOIN $databaseName.storage_institutions
-				ON (SUBSTR(email, LENGTH(domain) * -1)=domain AND domain!='')
-				WHERE userID=?";
-		try {
-			$institutionalDomainQuota = Zotero_WWW_DB_2::valueQuery($sql, $userID);
-		}
-		catch (Exception $e) {
-			Z_Core::logError("WARNING: $e -- retrying on primary");
-			$institutionalDomainQuota = Zotero_WWW_DB_1::valueQuery($sql, $userID);
-		}
-		
-		// Get maximum institutional quota by e-mail address
-		$sql = "SELECT IFNULL(MAX(storageQuota), 0) FROM $databaseName.users_email
-				JOIN $databaseName.storage_institution_email USING (email)
-				JOIN $databaseName.storage_institutions USING (institutionID)
-				WHERE userID=?";
-		try {
-			$institutionalEmailQuota = Zotero_WWW_DB_2::valueQuery($sql, $userID);
-		}
-		catch (Exception $e) {
-			Z_Core::logError("WARNING: $e -- retrying on primary");
-			$institutionalEmailQuota = Zotero_WWW_DB_1::valueQuery($sql, $userID);
-		}
-		
-		$quota = max($institutionalDomainQuota, $institutionalEmailQuota);
-		return $quota ? $quota : false;
-	}
-	
 	public static function getEffectiveUserQuota($userID) {
 		$cacheKey = "userStorageQuota_" . $userID;
 		
@@ -760,12 +725,7 @@ class Zotero_S3 {
 		}
 		$personalQuota = $personalQuota ? $personalQuota['quota'] : 0;
 		
-		$instQuota = self::getInstitutionalUserQuota($userID);
-		if (!$instQuota) {
-			$instQuota = 0;
-		}
-		
-		$quota = max($personalQuota, $instQuota);
+		$quota = $personalQuota;
 		$quota = $quota ? $quota : self::$defaultQuota;
 		
 		Z_Core::$MC->set($cacheKey, $quota, 60);
