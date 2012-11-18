@@ -207,22 +207,14 @@ class Zotero_Permissions {
 			return $privacy;
 		}
 		
-		$sql = "SELECT metaKey, metaValue FROM users_meta WHERE userID=? AND metaKey LIKE 'privacy_%'";
-		try {
-			$rows = Zotero_WWW_DB_2::query($sql, $userID);
-		}
-		catch (Exception $e) {
-			Z_Core::logError("WARNING: $e -- retrying on primary");
-			$rows = Zotero_WWW_DB_1::query($sql, $userID);
-		}
+		$sql = "SELECT publishLibrary, publishNotes FROM users WHERE userID=?";
+		$row = Zotero_DB::rowQuery($sql, $userID);
 		
 		$privacy = array(
-			'publishLibrary' => false,
-			'publishNotes' => false
+			'publishLibrary' => $row['publishLibrary'],
+			'publishNotes' => $row['publishNotes']
 		);
-		foreach ($rows as $row) {
-			$privacy[substr($row['metaKey'], 8)] = (bool) (int) $row['metaValue'];
-		}
+
 		$this->userPrivacy[$userID] = $privacy;
 		
 		return $privacy;
