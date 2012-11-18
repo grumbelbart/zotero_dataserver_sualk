@@ -84,18 +84,8 @@ class Zotero_Users {
 		
 		$sql = "SELECT username FROM users WHERE userID=?";
 		$username = Zotero_DB::valueQuery($sql, $userID);
-		if (!$username && !$skipAutoAdd) {
-			if (!self::exists($userID)) {
-				self::addFromWWW($userID);
-			}
-			else {
-				self::updateFromWWW($userID);
-			}
-			$sql = "SELECT username FROM users WHERE userID=?";
-			$username = Zotero_DB::valueQuery($sql, $userID);
-			if (!$username) {
-				throw new Exception("Username for userID $userID not found after fetching from API", Z_ERROR_USER_NOT_FOUND);
-			}
+		if (!$username) {
+			throw new Exception("Username for userID $userID not found", Z_ERROR_USER_NOT_FOUND);
 		}
 		
 		self::$usernamesByID[$userID] = $username;
@@ -136,23 +126,6 @@ class Zotero_Users {
 		Zotero_DB::commit();
 		
 		return $libraryID;
-	}
-	
-	
-	public static function addFromWWW($userID) {
-		if (self::exists($userID)) {
-			throw new Exception("User $userID already exists");
-		}
-		// Throws an error if user not found
-		$username = self::getUsernameFromWWW($userID);
-		self::add($userID, $username);
-	}
-	
-	
-	public static function updateFromWWW($userID) {
-		// Throws an error if user not found
-		$username = self::getUsernameFromWWW($userID);
-		self::updateUsername($userID, $username);
 	}
 	
 	
@@ -261,81 +234,6 @@ class Zotero_Users {
 	}
 	
 	
-	public static function isValidUser($userID) {
-		if (!$userID) {
-			throw new Exception("Invalid user");
-		}
-		
-		$cacheKey = "validUser_" . $userID;
-		$valid = Z_Core::$MC->get($cacheKey);
-		if ($valid === 1) {
-			return true;
-		}
-		else if ($valid === 0) {
-			return false;
-		}
-		
-		$valid = !!self::getValidUsersDB(array($userID));
-		
-		Z_Core::$MC->set($cacheKey, $valid ? 1 : 0, 300);
-		
-		return $valid;
-	}
-	
-	
-	public static function getValidUsers($userIDs) {
-		if (!$userIDs) {
-			return array();
-		}
-		
-		$newUserIDs = array();
-		foreach ($userIDs as $id) {
-			if (Zotero_Users::isValidUser($id)) {
-				$newUserIDs[] = $id;
-			}
-		}
-		
-		return $newUserIDs;
-	}
-	
-	
-	public static function getValidUsersDB($userIDs) {
-		if (!$userIDs) {
-			return array();
-		}
-		
-		$invalid = array();
-		
-		// Get any of these users that are known to be invalid
-		$sql = "SELECT UserID FROM LUM_User WHERE RoleID=2 AND UserID IN ("
-			. implode(', ', array_fill(0, sizeOf($userIDs), '?'))
-			. ")";
-		
-		try {
-			$invalid = Zotero_WWW_DB_2::columnQuery($sql, $userIDs);
-			Zotero_WWW_DB_2::close();
-		}
-		catch (Exception $e) {
-			try {
-				Z_Core::logError("WARNING: $e -- retrying on primary");
-				$invalid = Zotero_WWW_DB_1::columnQuery($sql, $userIDs);
-				Zotero_WWW_DB_1::close();
-			}
-			catch (Exception $e2) {
-				Z_Core::logError("WARNING: " . $e2);
-				
-				// If not available, assume valid
-			}
-		}
-		
-		if ($invalid) {
-			$userIDs = array_diff($userIDs, $invalid);
-		}
-		
-		return $userIDs;
-	}
-	
-	
 	public static function clearAllData($userID) {
 		if (empty($userID)) {
 			throw new Exception("userID not provided");
@@ -352,22 +250,6 @@ class Zotero_Users {
 		Zotero_DB::query($sql, $userID);
 		
 		Zotero_DB::commit();
-	}
-	
-	
-	private static function getUsernameFromWWW($userID) {
-		$sql = "SELECT username FROM users WHERE userID=?";
-		try {
-			$username = Zotero_WWW_DB_2::valueQuery($sql, $userID);
-		}
-		catch (Exception $e) {
-			Z_Core::logError("WARNING: $e -- retrying on primary");
-			$username = Zotero_WWW_DB_1::valueQuery($sql, $userID);
-		}
-		if (!$username) {
-			throw new Exception("User $userID not found", Z_ERROR_USER_NOT_FOUND);
-		}
-		return $username;
 	}
 }
 ?>

@@ -178,12 +178,10 @@ class Zotero_Groups {
 				$totalResults = $foundRows;
 			}
 			
-			// Include only groups with non-banned owners
 			$owners = array();
 			foreach ($rows as $row) {
 				$owners[] = $row['ownerUserID'];
 			}
-			$owners = Zotero_Users::getValidUsers($owners);
 			$ids = array();
 			foreach ($rows as $row) {
 				if (!in_array($row['ownerUserID'], $owners)) {
