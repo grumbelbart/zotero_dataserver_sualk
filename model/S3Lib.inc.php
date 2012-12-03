@@ -1719,19 +1719,11 @@ final class S3Request
 
 		if ($this->bucket !== '')
 		{
-			if ($this->__dnsBucketName($this->bucket))
-			{
-				$this->headers['Host'] = $this->bucket.'.'.$this->endpoint;
-				$this->resource = '/'.$this->bucket.$this->uri;
-			}
-			else
-			{
-				$this->headers['Host'] = $this->endpoint;
-				$this->uri = $this->uri;
-				if ($this->bucket !== '') $this->uri = '/'.$this->bucket.$this->uri;
-				$this->bucket = '';
-				$this->resource = $this->uri;
-			}
+			$this->headers['Host'] = $this->endpoint;
+			$this->uri = $this->uri;
+			if ($this->bucket !== '') $this->uri = '/'.$this->bucket.$this->uri;
+			$this->bucket = '';
+			$this->resource = $this->uri;
 		}
 		else
 		{
