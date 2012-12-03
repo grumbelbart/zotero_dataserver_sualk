@@ -26,6 +26,8 @@
 * POSSIBILITY OF SUCH DAMAGE.
 *
 * Amazon S3 is a trademark of Amazon.com, Inc. or its affiliates.
+*
+* Contains modifications for Zotero
 */
 
 /**
@@ -1017,6 +1019,8 @@ class S3
 	/**
 	* Get upload POST parameters for form uploads
 	*
+	* Contains some modifications by Dan S. for Zotero
+	* 
 	* @param string $bucket Bucket name
 	* @param string $uriPrefix Object URI prefix
 	* @param constant $acl ACL constant
@@ -1025,11 +1029,11 @@ class S3
 	* @param string $successRedirect Redirect URL or 200 / 201 status code
 	* @param array $amzHeaders Array of x-amz-meta-* headers
 	* @param array $headers Array of request headers or content type as a string
-	* @param boolean $flashVars Includes additional "Filename" variable posted by Flash
+	* @param string $filename Require exact filename match (changed from flashVars by Dan S. for Zotero)
 	* @return object
 	*/
 	public static function getHttpUploadPostParams($bucket, $uriPrefix = '', $acl = self::ACL_PRIVATE, $lifetime = 3600,
-	$maxFileSize = 5242880, $successRedirect = "201", $amzHeaders = array(), $headers = array(), $flashVars = false)
+	$maxFileSize = 5242880, $successRedirect = "201", $amzHeaders = array(), $headers = array(), $filename)
 	{
 		// Create policy object
 		$policy = new stdClass;
@@ -1045,13 +1049,17 @@ class S3
 			$obj->success_action_redirect = $successRedirect;
 		array_push($policy->conditions, $obj);
 
-		if ($acl !== self::ACL_PUBLIC_READ)
-			array_push($policy->conditions, array('eq', '$acl', $acl));
+		// acl is already added to the policy
+		//if ($acl !== self::ACL_PUBLIC_READ)
+		//	array_push($policy->conditions, array('eq', '$acl', $acl));
 
-		array_push($policy->conditions, array('starts-with', '$key', $uriPrefix));
-		if ($flashVars) array_push($policy->conditions, array('starts-with', '$Filename', ''));
-		foreach (array_keys($headers) as $headerKey)
-			array_push($policy->conditions, array('starts-with', '$'.$headerKey, ''));
+		//array_push($policy->conditions, array('starts-with', '$key', $uriPrefix));
+		array_push($policy->conditions, array('eq', '$key', $uriPrefix . $filename));
+		//if ($flashVars) array_push($policy->conditions, array('starts-with', '$Filename', ''));
+
+		foreach ($headers as $key=>$val) {
+			array_push($policy->conditions, array('eq', '$'.$key, $val));
+    }
 		foreach ($amzHeaders as $headerKey => $headerVal)
 		{
 			$obj = new stdClass;
@@ -1064,7 +1072,10 @@ class S3
 		// Create parameters
 		$params = new stdClass;
 		$params->AWSAccessKeyId = self::$__accessKey;
-		$params->key = $uriPrefix.'${filename}';
+
+		// Modified by Dan for Zotero
+		$params->key = $uriPrefix.$filename;
+
 		$params->acl = $acl;
 		$params->policy = $policy; unset($policy);
 		$params->signature = self::__getHash($params->policy);
@@ -1787,7 +1798,9 @@ final class S3Request
 			$query = substr($this->uri, -1) !== '?' ? '?' : '&';
 			foreach ($this->parameters as $var => $value)
 				if ($value == null || $value == '') $query .= $var.'&';
-				else $query .= $var.'='.rawurlencode($value).'&';
+				// Changed by Dan for Zotero
+				//else $query .= $var.'='.rawurlencode($value).'&';
+				else $query .= $var.'='.rawurlencode(utf8_decode($value)).'&';
 			$query = substr($query, 0, -1);
 			$this->uri .= $query;
 
@@ -2007,7 +2020,11 @@ final class S3Request
 		{
 			$data = trim($data);
 			if (strpos($data, ': ') === false) return $strlen;
-			list($header, $value) = explode(': ', $data, 2);
+			$h = explode(': ', $data, 2);
+			if (!isset($h[1])) {
+				$h[1] = '';
+			}
+			list($header, $value) = $h;
 			if ($header == 'Last-Modified')
 				$this->response->headers['time'] = strtotime($value);
 			elseif ($header == 'Content-Length')
