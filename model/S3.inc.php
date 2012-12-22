@@ -63,6 +63,7 @@ class Zotero_S3 {
 	public static function getDownloadURL($item, $ttl=false) {
 		self::requireLibrary();
 		S3::setAuth(Z_CONFIG::$AWS_ACCESS_KEY, Z_CONFIG::$AWS_SECRET_KEY);
+		S3::setEndpoint(Z_CONFIG::$S3_ENDPOINT);
 		
 		if (!$item->isAttachment()) {
 			throw new Exception("Item $item->id is not an attachment");
@@ -89,6 +90,7 @@ class Zotero_S3 {
 	public static function downloadFile(array $localFileItemInfo, $savePath, $filename=false) {
 		Zotero_S3::requireLibrary();
 		S3::setAuth(Z_CONFIG::$AWS_ACCESS_KEY, Z_CONFIG::$AWS_SECRET_KEY);
+		S3::setEndpoint(Z_CONFIG::$S3_ENDPOINT);
 		
 		if (!file_exists($savePath)) {
 			throw new Exception("Path '$savePath' does not exist");
@@ -127,6 +129,7 @@ class Zotero_S3 {
 	public static function uploadFile(Zotero_StorageFileInfo $info, $file, $contentType) {
 		Zotero_S3::requireLibrary();
 		S3::setAuth(Z_CONFIG::$AWS_ACCESS_KEY, Z_CONFIG::$AWS_SECRET_KEY);
+		S3::setEndpoint(Z_CONFIG::$S3_ENDPOINT);
 		
 		if (!file_exists($file)) {
 			throw new Exception("File '$file' does not exist");
@@ -221,7 +224,7 @@ class Zotero_S3 {
 	
 	
 	public static function getUploadBaseURL() {
-		return "https://" . Z_CONFIG::$S3_BUCKET . ".s3.amazonaws.com/";
+		return "https://" . Z_CONFIG::$S3_ENDPOINT . "/" . Z_CONFIG::$S3_BUCKET . "/";
 	}
 	
 	
@@ -345,6 +348,7 @@ class Zotero_S3 {
 		}
 		
 		S3::setAuth(Z_CONFIG::$AWS_ACCESS_KEY, Z_CONFIG::$AWS_SECRET_KEY);
+		S3::setEndpoint(Z_CONFIG::$S3_ENDPOINT);
 		$success = S3::copyObject(
 			Z_CONFIG::$S3_BUCKET,
 			self::getPathPrefix($localInfo['hash'], $localInfo['zip']) . $localInfo['filename'],
@@ -385,6 +389,7 @@ class Zotero_S3 {
 	public static function getRemoteFileInfo(Zotero_StorageFileInfo $info) {
 		self::requireLibrary();
 		S3::setAuth(Z_CONFIG::$AWS_ACCESS_KEY, Z_CONFIG::$AWS_SECRET_KEY);
+		S3::setEndpoint(Z_CONFIG::$S3_ENDPOINT);
 		
 		$url = self::getPathPrefix($info->hash, $info->zip) . $info->filename;
 		
@@ -662,6 +667,7 @@ class Zotero_S3 {
 		
 		self::requireLibrary();
 		S3::setAuth(Z_CONFIG::$AWS_ACCESS_KEY, Z_CONFIG::$AWS_SECRET_KEY);
+		S3::setEndpoint(Z_CONFIG::$S3_ENDPOINT);
 		$params = S3::getHttpUploadPostParams(
 			Z_CONFIG::$S3_BUCKET,
 			$path,
