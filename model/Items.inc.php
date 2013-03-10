@@ -596,8 +596,6 @@ class Zotero_Items extends Zotero_DataObjects {
 			$libraryKeys = array_map(function ($item) use ($libraryID) {
 				return $libraryID . "/" . $item->key;
 			}, $items);
-			
-			Zotero_Notifier::trigger('modify', 'item', $libraryKeys);
 		}
 	}
 	

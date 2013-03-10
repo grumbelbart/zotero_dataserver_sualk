@@ -345,8 +345,6 @@ class Zotero_Libraries {
 		self::updateVersion($libraryID);
 		self::updateTimestamps($libraryID);
 		
-		Zotero_Notifier::trigger("clear", "library", $libraryID);
-		
 		Zotero_DB::commit();
 	}
 	
