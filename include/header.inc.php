@@ -66,13 +66,6 @@ function zotero_autoload($className) {
 		require_once $className . '.inc.php';
 		return;
 	}
-	
-	// Elastica
-	if (strpos($className, 'Elastica\\') === 0) {
-		$className = str_replace('\\', '/', $className);
-		require_once 'Elastica/lib/' . $className . '.php';
-		return;
-	}
 }
 
 spl_autoload_register('zotero_autoload');
@@ -201,13 +194,10 @@ Z_Core::$MC = new Z_MemcachedClientLocal(
 		'servers' => Z_CONFIG::$MEMCACHED_SERVERS
 	)
 );
+
 Zotero_DB::addCallback("begin", array(Z_Core::$MC, "begin"));
 Zotero_DB::addCallback("commit", array(Z_Core::$MC, "commit"));
 Zotero_DB::addCallback("reset", array(Z_Core::$MC, "reset"));
-
-Z_Core::$Elastica = new \Elastica\Client(array(
-	'host' => Z_CONFIG::$SEARCH_HOST
-));
 
 require('interfaces/IAuthenticationPlugin.inc.php');
 
