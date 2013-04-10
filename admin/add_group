@@ -1,0 +1,63 @@
+#!/usr/bin/php
+<?
+set_include_path("../include");
+require("header.inc.php");
+
+require_once('Zend/Console/Getopt.php');
+
+try {
+  $opts = new Zend_Console_Getopt(
+    array(
+      'owner|o=s' => 'Name of the owner (required)',
+      'type|t=s'    => 'Type of the group (Private, PublicClosed or PublicOpen)',
+      'file|f=s' => 'File Editing (none, admins or members)',
+      'read|r=s' => 'Library Reading (members or all)',
+      'edit|e=s' => 'Library Editing (admins or members)'
+      )
+  );
+  $opts->parse();
+  # set default values
+  if ($opts->type === null) $opts->type = "Private";
+  if ($opts->file === null) $opts->file = "admins";
+  if ($opts->read === null) $opts->read = "members";
+  if ($opts->edit === null) $opts->edit = "admins";
+} catch (Zend_Console_Getopt_Exception $e) {
+  echo $e->getMessage()."\n".$e->getUsageMessage();
+  exit;
+}
+
+$args = $opts->getRemainingArgs();
+
+if (empty($args[0])) {
+  echo "No groupname specified\n";
+  echo $opts->getUsageMessage();
+  exit;
+}
+$groupname = $args[0];
+
+$ownerID = Zotero_Users::getUserIDFromUsername($opts->owner);
+if (!$ownerID) {
+  echo "No owner specified\n";
+  echo $opts->getUsageMessage();
+  exit;
+}
+
+try {
+  $group = new Zotero_Group;
+  $group->name = $groupname;
+  $group->ownerUserID = $ownerID;
+  $group->type = $opts->type;
+  $group->libraryEditing = $opts->edit;
+  $group->libraryReading = $opts->read;
+  $group->fileEditing = $opts->file;
+  $group->save();
+} catch (Exception $e) {
+  echo $e->getMessage()."\n";
+  exit;
+}
+
+$groupID = $group->id;
+
+echo "Added new group \"$groupname\" with ID $groupID\n";
+
+?>
