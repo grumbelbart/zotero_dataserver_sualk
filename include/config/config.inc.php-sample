@@ -24,6 +24,8 @@ class Z_CONFIG {
 	public static $S3_BUCKET = '';
 	public static $S3_BUCKET_CACHE = '';
 	public static $S3_ENDPOINT = 's3.amazonaws.com';
+	public static $S3_USE_SSL = true;
+	public static $S3_VALIDATE_SSL = true;
 	
 	public static $MEMCACHED_ENABLED = true;
 	public static $MEMCACHED_SERVERS = array(
