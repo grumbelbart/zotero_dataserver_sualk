@@ -441,7 +441,7 @@ CREATE TABLE `users` (
   `userID` int(10) unsigned NOT NULL,
   `libraryID` int(10) unsigned NOT NULL,
   `username` varchar(255) NOT NULL,
-  `password` char(40) NOT NULL,
+  `password` char(40) NULL,
   `publishLibrary` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `publishNotes` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `joined` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
